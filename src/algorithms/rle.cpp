@@ -110,7 +110,7 @@ std::vector<uint8_t> rle_encode(const std::vector<uint8_t> &bytes) {
       run_length++;
     }
 
-    if (run_length > 1) {
+    if (run_length > 2) {
       // Run
       compressed_block.push_back(127 + run_length);
       compressed_block.push_back(bytes[i]);
