@@ -44,9 +44,11 @@ void RLECompressor::compress(const std::vector<std::filesystem::path> &files) {
   for (auto &file : files) {
     auto bytes = read_bytes(file);
 
+    uint32_t uncompressed_block_length = bytes.size();
+
     auto compressed_block = rle_encode(bytes);
 
-    uint32_t block_length = compressed_block.size();
+    uint32_t compressed_block_length = compressed_block.size();
 
     // File header
     std::string filename_string = file.filename().string();
@@ -59,11 +61,17 @@ void RLECompressor::compress(const std::vector<std::filesystem::path> &files) {
       output.push_back(static_cast<uint8_t>(character));
     }
 
+    // Uncompressed bytes size
+    output.push_back(uncompressed_block_length & 0xFF);
+    output.push_back((uncompressed_block_length >> 8) & 0xFF);
+    output.push_back((uncompressed_block_length >> 16) & 0xFF);
+    output.push_back((uncompressed_block_length >> 24) & 0xFF);
+
     // Compressed bytes size
-    output.push_back(block_length & 0xFF);
-    output.push_back((block_length >> 8) & 0xFF);
-    output.push_back((block_length >> 16) & 0xFF);
-    output.push_back((block_length >> 24) & 0xFF);
+    output.push_back(compressed_block_length & 0xFF);
+    output.push_back((compressed_block_length >> 8) & 0xFF);
+    output.push_back((compressed_block_length >> 16) & 0xFF);
+    output.push_back((compressed_block_length >> 24) & 0xFF);
 
     // Compressed bytes
     output.insert(output.end(), compressed_block.begin(),
@@ -159,25 +167,33 @@ std::vector<DecodedFile> rle_decode(const std::vector<uint8_t> &bytes) {
       throw std::runtime_error(
           "Corrupted file: unexpected end while reading block length");
     }
-    uint32_t block_length = (bytes[byte_index]) | (bytes[byte_index + 1] << 8) |
-                            (bytes[byte_index + 2] << 16) |
-                            (bytes[byte_index + 3] << 24);
+    uint32_t uncompressed_block_length =
+        (bytes[byte_index]) | (bytes[byte_index + 1] << 8) |
+        (bytes[byte_index + 2] << 16) | (bytes[byte_index + 3] << 24);
+
+    byte_index += 4;
+
+    uint32_t compressed_block_length =
+        (bytes[byte_index]) | (bytes[byte_index + 1] << 8) |
+        (bytes[byte_index + 2] << 16) | (bytes[byte_index + 3] << 24);
 
     byte_index += 4;
 
     // Copy
-    if (byte_index + block_length > bytes.size()) {
+    if (byte_index + compressed_block_length > bytes.size()) {
       throw std::runtime_error(
           "Corrupted file: compressed block extends beyond file end");
     }
-    std::vector<uint8_t> compressed_block(
-        bytes.begin() + byte_index, bytes.begin() + byte_index + block_length);
-    byte_index += block_length;
+
+    std::vector<uint8_t> compressed_block(bytes.begin() + byte_index,
+                                          bytes.begin() + byte_index +
+                                              compressed_block_length);
+    byte_index += compressed_block_length;
 
     // Decode
     DecodedFile file;
     file.name = filename;
-    file.data.reserve(block_length * 2);
+    file.data.reserve(uncompressed_block_length);
 
     size_t i = 0;
     while (i < compressed_block.size()) {
