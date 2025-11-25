@@ -1,6 +1,6 @@
 import questionary
 import argparse
-import shrinkr as sk
+import shrinkr as sh
 import sys
 
 
@@ -14,13 +14,13 @@ def main():
     if args.mode == "compress":
         algorithm = questionary.select(
             "What compression algorithm do you wish to use?",
-            choices=sk.list_ctypes(),
+            choices=sh.list_ctypes(),
         ).ask()
 
         if algorithm is None:
             return 1
 
-        comp = sk.CompressorFactory.create_by_name(algorithm)
+        comp = sh.CompressorFactory.create_by_name(algorithm)
         comp.compress(args.files)
         print(f"Compressed {len(args.files)} file(s) using {algorithm}")
 
@@ -33,7 +33,7 @@ def main():
         with open(compressed_file, "rb") as f:
             first_byte = f.read(1)[0]
 
-        comp = sk.CompressorFactory.create_by_id(first_byte)
+        comp = sh.CompressorFactory.create_by_id(first_byte)
         comp.decompress([compressed_file])
         print(f"Decompressed {compressed_file}")
 

@@ -1,12 +1,18 @@
 from ._core import CompressorFactory, Compressor
 
 
-def compress(files: list[str], ctype: str | None = None) -> None:
+def compress(files: list[str], ctype: str = "rle") -> None:
+    """
+    Compresses a list of files using the specified algorithm.
+
+    Params:
+    - files: List of file paths to be compressed.
+    - ctype: Name of the compression algorithm to be used.
+      Could be 'rle', 'huffman', etc.
+      If not specified, the default algorithm is 'rle'.
+    """
     if not files:
         raise ValueError("No files provided")
-
-    if ctype is None:
-        ctype = "rle"
 
     comp = CompressorFactory.create_by_name(ctype)
     comp.compress(files)
