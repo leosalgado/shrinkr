@@ -11,4 +11,12 @@ public:
 
   void compress(const std::vector<std::filesystem::path> &files) override;
   void decompress(const std::vector<std::filesystem::path> &files) override;
+
+  struct DecodedFile {
+    std::string name;
+    std::vector<uint8_t> data;
+  };
+
+  std::vector<uint8_t> rle_encode(const std::vector<uint8_t> &bytes);
+  std::vector<DecodedFile> rle_decode(const std::vector<uint8_t> &bytes);
 };

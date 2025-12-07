@@ -22,14 +22,6 @@ bool registered = []() {
 }();
 } // namespace
 
-struct DecodedFile {
-  std::string name;
-  std::vector<uint8_t> data;
-};
-
-std::vector<uint8_t> rle_encode(const std::vector<uint8_t> &bytes);
-std::vector<DecodedFile> rle_decode(const std::vector<uint8_t> &bytes);
-
 void RLECompressor::compress(const std::vector<std::filesystem::path> &files) {
   if (files.empty()) {
     throw std::runtime_error("No files provided");
@@ -106,7 +98,8 @@ void RLECompressor::decompress(
   }
 }
 
-std::vector<uint8_t> rle_encode(const std::vector<uint8_t> &bytes) {
+std::vector<uint8_t>
+RLECompressor::rle_encode(const std::vector<uint8_t> &bytes) {
   std::vector<uint8_t> compressed_block;
   size_t i = 0;
   // 0 to 127 == literal
@@ -147,8 +140,9 @@ std::vector<uint8_t> rle_encode(const std::vector<uint8_t> &bytes) {
   return compressed_block;
 }
 
-std::vector<DecodedFile> rle_decode(const std::vector<uint8_t> &bytes) {
-  std::vector<DecodedFile> output;
+std::vector<RLECompressor::DecodedFile>
+RLECompressor::rle_decode(const std::vector<uint8_t> &bytes) {
+  std::vector<RLECompressor::DecodedFile> output;
   size_t byte_index = 1;
 
   while (byte_index < bytes.size()) {
@@ -191,7 +185,7 @@ std::vector<DecodedFile> rle_decode(const std::vector<uint8_t> &bytes) {
     byte_index += compressed_block_length;
 
     // Decode
-    DecodedFile file;
+    RLECompressor::DecodedFile file;
     file.name = filename;
     file.data.reserve(uncompressed_block_length);
 
